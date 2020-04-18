@@ -1,7 +1,9 @@
 package org.koitharu.kotatsu.ui.reader
 
 import android.net.Uri
+import androidx.annotation.WorkerThread
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.koin.core.KoinComponent
@@ -16,13 +18,14 @@ import kotlin.coroutines.CoroutineContext
 class PageLoader : KoinComponent, CoroutineScope, DisposableHandle {
 
 	private val job = SupervisorJob()
-	private val tasks = HashMap<String, Job>()
+	private val mutex = Mutex()
 	private val okHttp by inject<OkHttpClient>()
 	private val cache by inject<PagesCache>()
 
 	override val coroutineContext: CoroutineContext
 		get() = Dispatchers.Main + job
 
+	@WorkerThread
 	@Suppress("BlockingMethodInNonBlockingContext")
 	suspend fun loadFile(url: String, force: Boolean): File {
 		if (!force) {
@@ -54,6 +57,10 @@ class PageLoader : KoinComponent, CoroutineScope, DisposableHandle {
 				cache.put(url) { out ->
 					response.body!!.byteStream().copyTo(out)
 				}
+			}
+		}.also {
+			mutex.withLock(this) {
+				MangaUtils.cropBitmap(it)
 			}
 		}
 	}

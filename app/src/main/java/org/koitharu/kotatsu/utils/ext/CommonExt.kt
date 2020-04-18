@@ -1,6 +1,7 @@
 package org.koitharu.kotatsu.utils.ext
 
 import android.content.res.Resources
+import android.graphics.Bitmap
 import kotlinx.coroutines.delay
 import org.koitharu.kotatsu.BuildConfig
 import org.koitharu.kotatsu.R
@@ -43,4 +44,10 @@ fun Throwable.getDisplayMessage(resources: Resources) = when (this) {
 	} else {
 		resources.getString(R.string.error_occurred)
 	}
+}
+
+inline fun <R> Bitmap.use(block: (Bitmap) -> R): R = try {
+	block(this)
+} finally {
+	recycle()
 }
